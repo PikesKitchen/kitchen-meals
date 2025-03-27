@@ -73,14 +73,19 @@ input, select, button {
 }
 
 .rating-group label {
-    display: inline-flex;
-    align-items: center;          /* 🔧 Changed from flex-start to center */
+    display: flex;
+    align-items: flex-start;
     font-size: 16px;
+    line-height: 1.4;
     gap: 10px;
     max-width: 100%;
-    line-height: 1.4;
-    flex-wrap: nowrap;            /* Keeps button and text on one line */
+    flex-wrap: wrap;
     word-break: break-word;
+}
+
+.rating-group label span {
+    display: inline-block;
+    max-width: 90%;
 }
 
 .rating-group input[type="radio"] {
