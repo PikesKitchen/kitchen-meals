@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Snack Suggestion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main>
+        <h1>Suggest a Snack</h1>
+        <form action="/submit_snack" method="POST">
+            <label for="snack">What snacks do you wish to see? (20 characters)</label>
+            <input type="text" id="snack" name="snack" maxlength="20" required>
+            <button type="submit">Submit</button>
+        </form>
+    </main>
+</body>
+</html>

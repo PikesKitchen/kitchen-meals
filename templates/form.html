@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Meal Review</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main>
+        <h1>Rate This Meal</h1>
+
+        <form action="/submit_review/{{ meal_id }}" method="POST">
+            <h3>1. How was the meal?</h3>
+
+            <div class="rating-group">
+                <label><input type="radio" name="rating" value="5"> 5. I liked this meal a lot. Please cook this again.</label>
+                <label><input type="radio" name="rating" value="4"> 4. This meal was good.</label>
+                <label><input type="radio" name="rating" value="3"> 3. This meal was alright.</label>
+                <label><input type="radio" name="rating" value="2"> 2. This meal was not my favorite.</label>
+                <label><input type="radio" name="rating" value="1"> 1. I did not like this meal. Please do not cook again.</label>
+                
+            </div>
+
+            <br><br>
+
+            <h3>2. Do you have any additional comments? (40 characters)</h3>
+            <input type="text" name="comment" maxlength="40" placeholder="Your comment...">
+
+            <h3>3. What meals do you wish to see in the future? (20 characters)</h3>
+            <input type="text" name="suggestion" maxlength="20" placeholder="Suggested meal...">
+
+            <br><br>
+            <button type="submit">Submit</button>
+        </form>
+    </main>
+</body>
+</html>

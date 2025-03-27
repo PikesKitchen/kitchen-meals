@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pike's Kitchen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        function filterMeals() {
+            let input = document.getElementById("searchBar").value.toLowerCase();
+            let mealItems = document.querySelectorAll(".meal-item");
+            let totalRating = 0;
+            let totalReviews = 0;
+            let visibleMeals = 0;
+
+            mealItems.forEach(item => {
+                let name = item.querySelector(".meal-name").textContent.toLowerCase();
+                let match = name.includes(input);
+
+                item.style.display = match ? "block" : "none";
+
+                if (match) {
+                    visibleMeals++;
+                    let rating = parseFloat(item.getAttribute("data-rating"));
+                    let reviews = parseInt(item.getAttribute("data-reviews"));
+                    if (!isNaN(rating) && !isNaN(reviews)) {
+                        totalRating += rating * reviews;
+                        totalReviews += reviews;
+                    }
+                }
+            });
+
+            const avgBox = document.getElementById("combinedAverage");
+            if (totalReviews > 0) {
+                let avg = (totalRating / totalReviews).toFixed(2);
+                avgBox.textContent = `Combined Average for Matches: ${avg} (${totalReviews} reviews)`;
+                avgBox.style.display = "block";
+            } else {
+                avgBox.style.display = "none";
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Pike's Kitchen</h1>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/recommended">Recommended Meals</a>
+            <a href="/comments">View All Comments</a>
+            <a href="/snacks">Snacks</a>
+        </nav>
+        <input type="text" placeholder="Search meals..." id="searchBar" onkeyup="filterMeals()">
+        <div id="combinedAverage" style="margin-top: 10px; font-weight: bold; color: red; display: none;"></div>
+
+    </header>
+
+    <main>
+        <h2>Enter a New Meal</h2>
+        <form action="/add_meal" method="POST">
+            <label for="mealName">Meal Name:</label>
+            <input type="text" id="mealName" name="mealName" required>
+
+            <label for="mealType">Meal Type:</label>
+            <select id="mealType" name="mealType">
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+            </select>
+
+            <label for="mealDate">Date:</label>
+            <input type="date" id="mealDate" name="mealDate" required>
+
+            <button type="submit">Add Meal</button>
+        </form>
+
+        <div id="mealList">
+            <h2>All Meals</h2>
+            {% for meal in meals %}
+                {% set stat = meal_stats.get(meal['id']) %}
+                <div class="meal-item"
+                     data-rating="{{ stat.avg_rating if stat else 0 }}"
+                     data-reviews="{{ stat.review_count if stat else 0 }}"
+                     style="margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #ccc;">
+                     
+                    <div class="meal-name"><strong>{{ meal['name'] }}</strong></div>
+                    Type: {{ meal['type'] }}<br>
+                    Date: {{ meal['date'] }}<br>
+
+                    {% if stat %}
+                        Average Rating: {{ stat.avg_rating }} 
+                        ({{ stat.review_count }} reviews)<br>
+                    {% endif %}
+
+                    {% if meal['qr_code'] %}
+                        <img src="{{ url_for('static', filename=meal['qr_code']) }}" alt="QR Code" width="100"><br>
+                    {% endif %}
+
+                    <form action="/delete_meal/{{ meal['id'] }}" method="POST" onsubmit="return confirm('Delete this meal?')">
+                        <button type="submit">Delete Meal</button>
+                    </form>
+                </div>
+            {% else %}
+                <p>No meals added yet.</p>
+            {% endfor %}
+        </div>
+    </main>
+</body>
+</html>

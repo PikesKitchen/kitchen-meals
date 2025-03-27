@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recommended Meals</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main>
+        <h1>
+            Recommended Meals
+            <a href="/" style="font-size: 16px; margin-left: 20px;">Home</a>
+        </h1>
+
+        {% if suggestions %}
+            <ul>
+                {% for suggestion in suggestions %}
+                    <li>
+                        {{ suggestion['name'] }} ({{ suggestion['count'] }})
+                        <form action="/delete_suggestion" method="POST" style="display:inline;">
+                            <input type="hidden" name="suggestion" value="{{ suggestion['name'] }}">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No recommendations yet.</p>
+        {% endif %}
+    </main>
+</body>
+</html>

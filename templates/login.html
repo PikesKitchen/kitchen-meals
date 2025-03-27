@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pike's Kitchen Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main>
+        <h1>Welcome to Pike's Kitchen</h1>
+        <form action="/login" method="POST">
+            <label for="password">Enter Access Code:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Enter</button>
+        </form>
+        {% if error %}
+            <p style="color: red;">{{ error }}</p>
+        {% endif %}
+    </main>
+</body>
+</html>

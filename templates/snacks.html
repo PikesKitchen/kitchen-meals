@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Snack Suggestions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .snack-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .snack-header img {
+            width: 100px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="snack-header">
+            <h1>
+                Snack Suggestions
+                <a href="/" style="font-size: 16px; margin-left: 20px;">Home</a>
+            </h1>
+            <img src="{{ url_for('static', filename='snack_qr.png') }}" alt="Snack QR Code">
+        </div>
+
+        {% if snacks %}
+            <ul>
+                {% for snack in snacks %}
+                    <li>
+                        {{ snack['suggestion'] }}
+                        <form action="/delete_snack/{{ snack['id'] }}" method="POST" style="display:inline;">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No snack suggestions yet.</p>
+        {% endif %}
+    </main>
+</body>
+</html>
