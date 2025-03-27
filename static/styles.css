@@ -68,9 +68,9 @@ input, select, button {
 }
 
 .rating-group input[type="radio"] {
-    margin-left: -180px;
-    margin-right: -160px;
+    margin-right: 10px;
     transform: scale(1.2);
+    cursor: pointer;
   }
   
 
