@@ -19,7 +19,7 @@ def sanitize_filename(text):
 
 # ✅ Generate QR code image with custom filename
 def generate_qr_code(meal_id, meal_name, meal_date):
-    url = f'http://127.0.0.1:5000/form/{meal_id}'
+    url = f'https://kitchen-meals.onrender.com/form/{meal_id}'
     img = qrcode.make(url)
 
     safe_name = sanitize_filename(meal_name)
@@ -30,7 +30,7 @@ def generate_qr_code(meal_id, meal_name, meal_date):
     return filename
 
 def generate_snack_qr():
-    url = 'http://127.0.0.1:5000/snack_form'
+    url = 'https://kitchen-meals.onrender.com/snack_form'
     img = qrcode.make(url)
     img.save('static/snack_qr.png')
 
