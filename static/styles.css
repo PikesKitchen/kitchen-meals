@@ -39,8 +39,11 @@ main {
     background-color: rgba(255, 255, 255, 0.8);
     margin: 20px;
     border-radius: 10px;
+    max-width: 600px;
+    margin-left: 20px;
 }
 
+/* Form layout */
 form {
     margin-bottom: 30px;
 }
@@ -54,27 +57,36 @@ input, select, button {
     max-width: 400px;
 }
 
-/* ✅ Vertical layout for rating section */
+/* ✅ Layout wrapper to control alignment */
+.rating-wrapper {
+    max-width: 500px;
+    margin-left: 20px;
+    margin-right: auto;
+    padding: 10px 0;
+}
+
+/* ✅ Vertical layout for radio rating section */
 .rating-group {
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-  
-  .rating-group label {
+}
+
+.rating-group label {
     display: flex;
     align-items: center;
     font-size: 16px;
+    white-space: normal;
+    line-height: 1.4;
 }
 
 .rating-group input[type="radio"] {
     margin-right: 10px;
     transform: scale(1.2);
     cursor: pointer;
-  }
-  
+}
 
-/* Button styling */
+/* ✅ Button styling */
 button {
     cursor: pointer;
     font-size: 16px;

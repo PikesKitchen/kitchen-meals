@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Meal Review</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Review</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
 <body>
     <main>
         <h1>Rate This Meal</h1>
@@ -13,13 +13,14 @@
         <form action="/submit_review/{{ meal_id }}" method="POST">
             <h3>1. How was the meal?</h3>
 
-            <div class="rating-group">
-                <label><input type="radio" name="rating" value="5"> 5. I liked this meal a lot. Please cook this again.</label>
-                <label><input type="radio" name="rating" value="4"> 4. This meal was good.</label>
-                <label><input type="radio" name="rating" value="3"> 3. This meal was alright.</label>
-                <label><input type="radio" name="rating" value="2"> 2. This meal was not my favorite.</label>
-                <label><input type="radio" name="rating" value="1"> 1. I did not like this meal. Please do not cook again.</label>
-                
+            <div class="rating-wrapper">
+                <div class="rating-group">
+                    <label><input type="radio" name="rating" value="5"> 5. I liked this meal a lot. Please cook this again.</label>
+                    <label><input type="radio" name="rating" value="4"> 4. This meal was good.</label>
+                    <label><input type="radio" name="rating" value="3"> 3. This meal was alright.</label>
+                    <label><input type="radio" name="rating" value="2"> 2. This meal was not my favorite.</label>
+                    <label><input type="radio" name="rating" value="1"> 1. I did not like this meal. Please do not cook again.</label>
+                </div>
             </div>
 
             <br><br>
