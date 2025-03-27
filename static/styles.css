@@ -74,16 +74,18 @@ input, select, button {
 
 .rating-group label {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     font-size: 16px;
-    white-space: normal;
+    gap: 10px;
+    max-width: 100%;
+    flex-wrap: wrap;
     line-height: 1.4;
 }
 
 .rating-group input[type="radio"] {
-    margin-right: 10px;
     transform: scale(1.2);
     cursor: pointer;
+    margin-top: 4px;
 }
 
 /* ✅ Button styling */
