@@ -73,13 +73,14 @@ input, select, button {
 }
 
 .rating-group label {
-    display: flex;
+    display: inline-flex;
     align-items: flex-start;
     font-size: 16px;
     gap: 10px;
     max-width: 100%;
-    flex-wrap: wrap;
     line-height: 1.4;
+    flex-wrap: nowrap;
+    word-break: break-word;
 }
 
 .rating-group input[type="radio"] {
