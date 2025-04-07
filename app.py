@@ -1,58 +1,68 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
+from collections import defaultdict
 import qrcode
 import os
 import re
-from collections import defaultdict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'something_secret_here'  # Required for session handling
+app.secret_key = 'something_secret_here'
 
-def get_db_connection():
-    conn = sqlite3.connect('meals.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+# ✅ Connect to PostgreSQL with SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# ✅ Sanitize meal name for safe filenames
+db = SQLAlchemy(app)
+
+# ✅ Database models
+class Meal(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    type = db.Column(db.String(50))
+    date = db.Column(db.String(20))
+    qr_code = db.Column(db.String(200))
+
+class Review(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    meal_id = db.Column(db.Integer, db.ForeignKey('meal.id'))
+    rating = db.Column(db.Integer)
+    comment = db.Column(db.String(40))
+    suggestion = db.Column(db.String(20))
+
+class Snack(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    suggestion = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, server_default=func.now())
+
+# ✅ QR Code
 def sanitize_filename(text):
     return re.sub(r'[^a-zA-Z0-9_]', '', text.replace(' ', '_')).lower()
 
-# ✅ Generate QR code image with custom filename
 def generate_qr_code(meal_id, meal_name, meal_date):
     url = f'https://kitchen-meals.onrender.com/form/{meal_id}'
     img = qrcode.make(url)
-
-    safe_name = sanitize_filename(meal_name)
-    filename = f'qr_{safe_name}_{meal_date}.png'
-    qr_path = os.path.join('static', filename)
-    img.save(qr_path)
-
+    filename = f'qr_{sanitize_filename(meal_name)}_{meal_date}.png'
+    path = os.path.join('static', filename)
+    img.save(path)
     return filename
-
-def generate_snack_qr():
-    url = 'https://kitchen-meals.onrender.com/snack_form'
-    img = qrcode.make(url)
-    img.save('static/snack_qr.png')
 
 @app.route('/')
 def home():
     if not session.get('authenticated'):
         return redirect(url_for('login'))
 
-    conn = get_db_connection()
-    meals = conn.execute('SELECT * FROM meals ORDER BY date DESC').fetchall()
-
-    stats = conn.execute('''
-        SELECT meal_id, 
-               ROUND(AVG(rating), 2) AS avg_rating, 
-               COUNT(*) AS review_count
-        FROM reviews
-        WHERE rating IS NOT NULL
-        GROUP BY meal_id
-    ''').fetchall()
-
-    meal_stats = {stat['meal_id']: stat for stat in stats}
-    conn.close()
+    meals = Meal.query.order_by(Meal.date.desc()).all()
+    stats = db.session.query(
+        Review.meal_id,
+        db.func.round(db.func.avg(Review.rating), 2).label('avg_rating'),
+        db.func.count().label('review_count')
+    ).filter(Review.rating != None).group_by(Review.meal_id).all()
+    
+    meal_stats = {s.meal_id: s for s in stats}
     return render_template('index.html', meals=meals, meal_stats=meal_stats)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -62,8 +72,7 @@ def login():
         if request.form['password'] == '1717':
             session['authenticated'] = True
             return redirect(url_for('home'))
-        else:
-            error = 'Incorrect password. Please try again.'
+        error = 'Incorrect password. Please try again.'
     return render_template('login.html', error=error)
 
 @app.route('/add_meal', methods=['POST'])
@@ -72,34 +81,27 @@ def add_meal():
     meal_type = request.form['mealType']
     date = request.form['mealDate']
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO meals (name, type, date) VALUES (?, ?, ?)',
-                   (name, meal_type, date))
-    meal_id = cursor.lastrowid
+    meal = Meal(name=name, type=meal_type, date=date)
+    db.session.add(meal)
+    db.session.commit()
 
-    # ✅ Generate QR with custom filename
-    qr_filename = generate_qr_code(meal_id, name, date)
-    cursor.execute('UPDATE meals SET qr_code = ? WHERE id = ?', (qr_filename, meal_id))
-
-    conn.commit()
-    conn.close()
+    qr_filename = generate_qr_code(meal.id, name, date)
+    meal.qr_code = qr_filename
+    db.session.commit()
 
     return redirect(url_for('home'))
 
 @app.route('/delete_meal/<int:meal_id>', methods=['POST'])
 def delete_meal(meal_id):
-    conn = get_db_connection()
-    qr_code = conn.execute('SELECT qr_code FROM meals WHERE id = ?', (meal_id,)).fetchone()
-    if qr_code and qr_code['qr_code']:
-        qr_path = os.path.join('static', qr_code['qr_code'])
-        if os.path.exists(qr_path):
-            os.remove(qr_path)
-
-    conn.execute('DELETE FROM reviews WHERE meal_id = ?', (meal_id,))
-    conn.execute('DELETE FROM meals WHERE id = ?', (meal_id,))
-    conn.commit()
-    conn.close()
+    meal = Meal.query.get(meal_id)
+    if meal:
+        if meal.qr_code:
+            path = os.path.join('static', meal.qr_code)
+            if os.path.exists(path):
+                os.remove(path)
+        Review.query.filter_by(meal_id=meal_id).delete()
+        db.session.delete(meal)
+        db.session.commit()
     return redirect(url_for('home'))
 
 @app.route('/form/<int:meal_id>')
@@ -111,61 +113,42 @@ def submit_review(meal_id):
     rating = request.form.get('rating')
     comment = request.form.get('comment')
     suggestion = request.form.get('suggestion')
-
-    conn = get_db_connection()
-    conn.execute('INSERT INTO reviews (meal_id, rating, comment, suggestion) VALUES (?, ?, ?, ?)',
-                 (meal_id, rating, comment, suggestion))
-    conn.commit()
-    conn.close()
-
+    review = Review(meal_id=meal_id, rating=rating, comment=comment, suggestion=suggestion)
+    db.session.add(review)
+    db.session.commit()
     return "<h2>Thank you for your feedback!</h2><p>You can now close this page.</p>"
 
 @app.route('/comments')
 def comments():
-    conn = get_db_connection()
-    data = conn.execute('''
-        SELECT reviews.id, reviews.comment, meals.name AS meal_name
-        FROM reviews
-        JOIN meals ON reviews.meal_id = meals.id
-        WHERE reviews.comment IS NOT NULL AND reviews.comment != ''
-        ORDER BY meals.date DESC
-    ''').fetchall()
-    conn.close()
+    results = db.session.query(Review, Meal).join(Meal).filter(
+        Review.comment != None, Review.comment != ''
+    ).order_by(Meal.date.desc()).all()
 
     grouped = defaultdict(list)
-    for row in data:
-        grouped[row['meal_name']].append(row)
+    for review, meal in results:
+        grouped[meal.name].append({'id': review.id, 'comment': review.comment})
 
     return render_template('comments.html', grouped_comments=grouped)
 
 @app.route('/delete_comment/<int:comment_id>', methods=['POST'])
 def delete_comment(comment_id):
-    conn = get_db_connection()
-    conn.execute('DELETE FROM reviews WHERE id = ?', (comment_id,))
-    conn.commit()
-    conn.close()
+    Review.query.filter_by(id=comment_id).delete()
+    db.session.commit()
     return redirect(url_for('comments'))
 
 @app.route('/recommended')
 def recommended():
-    conn = get_db_connection()
-    suggestions = conn.execute('''
-        SELECT LOWER(suggestion) AS name, COUNT(*) AS count
-        FROM reviews
-        WHERE suggestion IS NOT NULL AND suggestion != ''
-        GROUP BY name
-        ORDER BY count DESC
-    ''').fetchall()
-    conn.close()
+    suggestions = db.session.query(
+        db.func.lower(Review.suggestion).label("name"),
+        db.func.count().label("count")
+    ).filter(Review.suggestion != None, Review.suggestion != '').group_by("name").order_by(db.desc("count")).all()
     return render_template('recommended.html', suggestions=suggestions)
 
 @app.route('/delete_suggestion', methods=['POST'])
 def delete_suggestion():
     suggestion = request.form['suggestion']
-    conn = get_db_connection()
-    conn.execute('DELETE FROM reviews WHERE LOWER(suggestion) = LOWER(?)', (suggestion,))
-    conn.commit()
-    conn.close()
+    Review.query.filter(db.func.lower(Review.suggestion) == suggestion.lower()).delete()
+    db.session.commit()
     return redirect(url_for('recommended'))
 
 @app.route('/snack_form')
@@ -175,25 +158,19 @@ def snack_form():
 @app.route('/submit_snack', methods=['POST'])
 def submit_snack():
     snack = request.form['snack']
-    conn = get_db_connection()
-    conn.execute('INSERT INTO snacks (suggestion) VALUES (?)', (snack,))
-    conn.commit()
-    conn.close()
+    db.session.add(Snack(suggestion=snack))
+    db.session.commit()
     return "<h2>Thank you for your snack suggestion!</h2><p>You can now close this page.</p>"
 
 @app.route('/snacks')
 def snacks():
-    conn = get_db_connection()
-    snacks = conn.execute('SELECT * FROM snacks ORDER BY created_at DESC').fetchall()
-    conn.close()
+    snacks = Snack.query.order_by(Snack.created_at.desc()).all()
     return render_template('snacks.html', snacks=snacks)
 
 @app.route('/delete_snack/<int:snack_id>', methods=['POST'])
 def delete_snack(snack_id):
-    conn = get_db_connection()
-    conn.execute('DELETE FROM snacks WHERE id = ?', (snack_id,))
-    conn.commit()
-    conn.close()
+    Snack.query.filter_by(id=snack_id).delete()
+    db.session.commit()
     return redirect(url_for('snacks'))
 
 if __name__ == '__main__':
